@@ -4,79 +4,53 @@ using UnityEngine;
 
 public class MovementScript : MonoBehaviour
 {
+    public Transform cameraTransform;
     public float speed = 3f;
     public float sprintModifier = 1.5f;
     public float rotationSpeed = 10f;
 
     private Animator animator;
-    private Vector3 lastDirection = Vector3.zero;
+    private UnityEngine.AI.NavMeshAgent agent;
+
     private bool isMoving = false;
     private bool isRunning = false;
-    private float movementSpeed;
 
     private void Start()
     {
         animator = GetComponent<Animator>();
+        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     }
 
     private void Update()
     {
-        movementSpeed = GetMovementSpeed();
-        isMoving = IsMoving();
-        isRunning = IsRunning();
+        // Movement Input
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis("Vertical");
+        
+        isMoving = horizontalInput != 0f || verticalInput != 0f;
+        isRunning = isMoving && Input.GetKey(KeyCode.LeftShift);
 
+        // Calculate movement speed
+        float movementSpeed = isRunning ? speed * sprintModifier : speed;
+
+        // Calculate movement direction
+        Vector3 movementDirection = cameraTransform.forward * verticalInput + cameraTransform.right * horizontalInput;
+        movementDirection.y = 0f; // Exclude vertical movement
+        movementDirection.Normalize();
+
+        // Move the character
+        agent.Move(movementDirection * Time.deltaTime * movementSpeed);
+
+        // Rotate the character
         if (isMoving)
         {
-            Move();
-            Rotate();
-            Animate();
+            Quaternion lookRotation = Quaternion.LookRotation(movementDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, rotationSpeed * Time.deltaTime);
         }
-        else
-        {
-            SetIdle();
-        }
-    }
 
-    private float GetMovementSpeed()
-    {
-        return Input.GetKey(KeyCode.LeftShift) ? speed * sprintModifier : speed;
-    }
-
-    private bool IsMoving()
-    {
-        return Input.GetAxis("Vertical") != 0 || Input.GetAxis("Horizontal") != 0;
-    }
-
-    private bool IsRunning()
-    {
-        return isMoving && Input.GetKey(KeyCode.LeftShift);
-    }
-
-    private void Move()
-    {
-        Vector3 inputDirection = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
-        inputDirection = inputDirection.normalized;
-        lastDirection = inputDirection;
-        transform.position += inputDirection * movementSpeed * Time.deltaTime;
-    }
-
-    private void Rotate()
-    {
-        Quaternion lookRotation = Quaternion.LookRotation(lastDirection);
-        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, rotationSpeed * Time.deltaTime);
-    }
-
-    private void Animate()
-    {
-        animator.SetBool("IsWalking", !isRunning);
+        // Update animation states
+        animator.SetBool("IsWalking", isMoving && !isRunning);
         animator.SetBool("IsRunning", isRunning);
-        animator.SetBool("IsIdle", false);
-    }
-
-    private void SetIdle()
-    {
-        animator.SetBool("IsWalking", false);
-        animator.SetBool("IsRunning", false);
-        animator.SetBool("IsIdle", true);
+        animator.SetBool("IsIdle", !isMoving);
     }
 }

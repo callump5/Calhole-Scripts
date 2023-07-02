@@ -13,7 +13,7 @@ public class NPCMovementScript : MonoBehaviour
     void Start() {
         animator = GetComponent<Animator>();
         UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        agent.stoppingDistance = 0.1f; // Set a small stopping distance
+        agent.stoppingDistance = 2f;
     }
 
     void Update() {
