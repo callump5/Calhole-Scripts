@@ -1,0 +1,102 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class AttackScript : MonoBehaviour 
+{
+    [SerializeField] private Transform _rightHand;
+    [SerializeField] private Transform _rootObject; 
+
+    public float _swingReach = 4f;
+    public float _attackSpeed = 2f;
+    public float _attackDuration = 2f;
+    public float _resetDelay = 0.5f;
+
+    private HandBone _handObject;
+    private Coroutine _attackCoroutine;
+
+    // Attack Functions
+    IEnumerator Stab()
+    {
+        Debug.Log("Stab");
+
+        // Get the attack direction and normalize the input
+        Vector3 attackDirection = _rootObject.transform.forward;
+        attackDirection.Normalize();
+
+        Vector3 desiredPosition = _handObject.IKTarget.position + (attackDirection * _swingReach);
+
+        // Perform smooth movement using Lerp
+        _handObject.IKTarget.position = Vector3.Lerp(_handObject.IKTarget.position, desiredPosition, Time.deltaTime * _attackSpeed);
+
+        // Check if the hand object has reached the desired position
+        if (Vector3.Distance(_handObject.IKTarget.position, desiredPosition) <= 0.01f)
+        {
+            // Reset the hand object back to its default position
+            _handObject.IKTarget.position = _handObject.defaultPosition;
+        }
+        yield break;
+    }
+
+    IEnumerator ResetHandPosition()
+    {
+        // Reset the hand object position to its default position
+        _handObject.IKTarget.position = _handObject.defaultPosition;
+        yield break;
+    }
+
+
+
+    public void StartAttack()
+    {
+        if (_attackCoroutine != null)
+        {
+            // Attack is already in progress, ignore new start request
+            return;
+        }
+
+        _attackCoroutine = StartCoroutine(AttackCoroutine());
+    }
+
+    private IEnumerator AttackCoroutine()
+    {
+        Debug.Log("Attacking");
+        yield return StartCoroutine(Stab());
+        yield return  StartCoroutine(ResetHandPosition());
+        Debug.Log("Attack Completed");
+    }
+
+
+    // Unity Hooks 
+    void Start()
+    {
+        _handObject = new HandBone()
+        {
+            IKTarget = _rightHand,
+            defaultPosition = transform.localPosition,
+            lastPosition = transform.position,
+            // swingDirection = null
+        };
+    }
+
+    void FixedUpdate()
+    {
+        if(Input.GetMouseButton(0)) StartAttack();
+    }
+
+
+
+
+
+
+}
+
+
+
+
+public class HandBone {
+    public Transform IKTarget;
+    public Vector3 defaultPosition;
+    public Vector3 lastPosition;
+    public Vector3 swingDirection;
+}

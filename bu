@@ -1,0 +1,144 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ProceduralAnimator : MonoBehaviour
+{
+    [SerializeField] private Transform[] _limbTargets;
+    [SerializeField] private float _stepSize = 1;
+    [SerializeField] public Vector3 _targetOffset = new Vector3(0f, 0f, 0.6f); 
+
+    private int _nLimbs;
+    private ProceduralLimb[] _limbs;
+    private Vector3 _lastBodyPostition;
+    private Vector3 _velocity;
+    private bool _isMoving;
+
+    void Start()
+    {
+        _nLimbs = _limbTargets.Length;
+        _limbs = new ProceduralLimb[_nLimbs];
+        Transform t;
+
+        for (int i = 0; i < _nLimbs; i++)
+        {
+            t = _limbTargets[i];
+            _limbs[i] = new ProceduralLimb()
+            {
+                IKTarget = t,
+                defaultPosition = t.localPosition,
+                lastPosition = t.position,
+                isMoving = false,
+                sphereObject = null // Initialize the sphere object field
+
+            };
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = "sphere_" + i.ToString(); // Make the sphere name dynamic
+            Vector3 horizontalOffset = new Vector3(t.forward.x, 0f, t.forward.z).normalized * _targetOffset.magnitude;
+            sphere.transform.position = t.position + -horizontalOffset;            
+            sphere.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f); // 
+            _limbs[i].sphereObject = sphere; // Save the sphere object to the limb
+
+        }
+    }
+
+    void FixedUpdate()
+    {
+
+        // TODO
+        // 1) Calculate point to step to
+        // 2) Extend Leg
+        // 3) Move the body to the extended point, 
+        // 4) Make the legs loop to mimic moving forward
+        // 5) Raise/lower legs in their stride so it looks realistic 
+
+
+
+
+        Transform t;
+
+
+
+
+
+        for (int i = 0; i < _nLimbs; i++)
+        {
+            // t = _limbTargets[i];
+            // Vector3 horizontalOffset = new Vector3(t.forward.x, 0f, t.forward.z).normalized * _targetOffset.magnitude;
+            // sphere.transform.position = t.position + horizontalOffset;
+            // _limbs[i].sphereObject.transform.position = t.position + (t.forward * _targetOffset.magnitude);
+        }
+        // _velocity = transform.position - _lastBodyPostition;
+        // _lastBodyPostition = transform.position;
+
+        // Vector3[] desiredPositions = new Vector3[_nLimbs];
+        // float greatestDistance = _stepSize;
+        // int limbToMove = -1;
+
+        // for (int i = 0; i < _nLimbs; ++i)
+        // {
+        //     if (_limbs[i].isMoving) continue; // limb already moving: can't move again!
+
+        //     desiredPositions[i] = transform.TransformPoint(_limbs[i].defaultPosition);
+        //     float dist = (desiredPositions[i] + _velocity - _limbs[i].lastPosition).magnitude;
+        //     if (dist > greatestDistance)
+        //     {
+        //         greatestDistance = dist;
+        //         limbToMove = i;
+        //     }
+        // }
+
+        // // keep non-moving limbs in place
+        // for (int i = 0; i < _nLimbs; ++i)
+        // {
+        //     if (i != limbToMove)
+        //     {
+        //         if (!_limbs[i].isMoving)
+        //         {
+        //             // Move the non-moving limbs instantly
+        //             _limbs[i].IKTarget.position = _limbs[i].lastPosition;
+        //         }
+        //     }
+        // }
+
+        // // Move the selected limb to its "desired" position over time
+        // if (limbToMove != -1)
+        // {
+        //     if (!_limbs[limbToMove].isMoving)
+        //     {
+        //         StartCoroutine(MoveLimb(_limbs[limbToMove], desiredPositions[limbToMove]));
+        //     }
+        // }
+    }
+
+    IEnumerator MoveLimb(ProceduralLimb limb, Vector3 targetPosition)
+    {
+        limb.isMoving = true;
+
+        Vector3 startPosition = limb.IKTarget.position;
+        float duration = 0.1f; // Duration in seconds
+        float elapsedTime = 0.0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.fixedDeltaTime;
+            float t = Mathf.Clamp01(elapsedTime / duration);
+            limb.IKTarget.position = Vector3.Lerp(startPosition, targetPosition, t);
+            yield return new WaitForFixedUpdate();
+        }
+
+        limb.IKTarget.position = targetPosition;
+        limb.lastPosition = targetPosition;
+        
+        limb.isMoving = false;
+    }
+}
+
+public class ProceduralLimb
+{
+    public Transform IKTarget;
+    public Vector3 defaultPosition;
+    public Vector3 lastPosition;
+    public GameObject sphereObject;
+    public bool isMoving;
+}
